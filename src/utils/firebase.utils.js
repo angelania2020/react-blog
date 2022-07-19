@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithRedirect, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -23,3 +24,38 @@ googleProvider.setCustomParameters({
 
 export const auth = getAuth();
 export const signInWithGooglePopup = () => signInWithPopup(auth, googleProvider);
+
+// Create DB (Singleton instance)
+export const db = getFirestore();
+
+// Method
+export const createUserDocumentFromAuth = async (userAuth) => {
+    // Gives document reference
+    const userDocRef = doc(db, 'users', userAuth.uid);
+
+    // Gives document data, checks if instance exists
+    const userSnapshot = await getDoc(userDocRef);
+    // console.log(userSnapshot.exists());
+
+
+    if (!userSnapshot.exists()) {
+        // if user data does not exist
+        // create / set the document with the data from userAuth in my collection
+        const { displayName, email } = userAuth;
+        const createdAt = new Date();
+
+        try {
+            await setDoc(userDocRef, {
+                displayName,
+                email,
+                createdAt
+            })
+        } catch (error) {
+            console.log('error creating the user: ', error.message);
+        }
+    }
+
+    // if user data exists
+    // return userDocReference
+    return userDocRef;
+}
